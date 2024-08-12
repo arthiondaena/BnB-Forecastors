@@ -3,8 +3,8 @@ import pandas as pd
 from datetime import date, timedelta
 from random import randint
 
-class VeloCastor():
-	""" Velocity Forecastor.
+class VeloCaster():
+	""" Velocity Forecaster.
 	
 	Used to forecast bookings based on velocity which is provided by already booked slots.
 
@@ -19,8 +19,8 @@ class VeloCastor():
 	
 	Examples
 	----------
-	>>> from utilies import Velocastor
-	>>> model = Velocastor(df['payDates'], df['bookDates'])
+	>>> from utilies import VeloCaster
+	>>> model = VeloCaster(df['payDates'], df['bookDates'])
 	>>> model.train()
 	>>> y_pred = model.forecast()
 	"""
@@ -85,8 +85,8 @@ class VeloCastor():
 
 		return futureBookings
 
-class WeekVeloCastor():
-	""" Week Velocity Forecastor.
+class WeekVeloCaster():
+	""" Week Velocity Forecaster.
 	
 	Used to forecast bookings based on velocity which is provided by already booked slots
 	catogorized by weekdays.
@@ -102,8 +102,8 @@ class WeekVeloCastor():
 	
 	Examples
 	----------
-	>>> from utilies import WeekVelocastor
-	>>> model = WeekVelocastor(df['payDates'], df['bookDates'])
+	>>> from utilies import WeekVeloCaster
+	>>> model = WeekVeloCaster(df['payDates'], df['bookDates'])
 	>>> model.train()
 	>>> y_pred = model.forecast()
 	"""

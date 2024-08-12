@@ -1,4 +1,4 @@
-from utilities import VeloCastor, WeekVeloCastor, cross_val_error
+from utilities import VeloCaster, WeekVeloCaster, cross_val_error
 import pandas as pd
 import numpy as np
 from datetime import date, timedelta
@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import warnings
 warnings.filterwarnings("ignore")
 
-df = pd.read_csv('raw_data_bookings.csv', encoding = 'unicode_escape', low_memory=False, lineterminator='\n')
+df = pd.read_csv('../raw_data_bookings.csv', encoding = 'unicode_escape', low_memory=False, lineterminator='\n')
 df = df[(df['isBooked']==True) & (df['bookingStatus']=='Booked')]
 
 # Regular expression for extracting date from date time format
@@ -30,24 +30,27 @@ y = prob_df[(prob_df['dateOfBooking'] > pd.to_datetime(today)) & (prob_df['dateO
 y = y['dateOfBooking'].value_counts().reset_index().sort_values(by='dateOfBooking')
 y_true = y['count'].to_numpy()
 print("Bookings of next week: ", y_true)
+# Bookings of next week:  [45 41 43 47 39 48 54]
 
-# Forecasting using VeloCastor.
-velocastor = VeloCastor(prob_df1['pay_date'], prob_df1['dateOfBooking'])
-velocastor.train()
-y_pred_velo = velocastor.forecast()
-print("Forecasting using VeloCastor: ", y_pred_velo)
+# Forecasting using VeloCaster.
+veloCaster = VeloCaster(prob_df1['pay_date'], prob_df1['dateOfBooking'])
+veloCaster.train()
+y_pred_velo = veloCaster.forecast()
+print("Forecasting using VeloCaster: ", y_pred_velo)
+# Forecasting using VeloCaster:  [39.34352518 34.54773869 28.78289474 48.66803279 50.25125628 58.22981366 82.72058824]
 
-# Forecasting using WeekVelocastor.
-weekvelocastor = WeekVeloCastor(prob_df1['pay_date'], prob_df1['dateOfBooking'])
-weekvelocastor.train()
-y_pred_week = weekvelocastor.forecast()
-print("Forecasting using WeekVeloCastor: ", y_pred_week)
+# Forecasting using WeekVeloCaster.
+weekveloCaster = WeekVeloCaster(prob_df1['pay_date'], prob_df1['dateOfBooking'])
+weekveloCaster.train()
+y_pred_week = weekveloCaster.forecast()
+print("Forecasting using WeekVeloCaster: ", y_pred_week)
+# Forecasting using WeekVeloCaster:  [38.5 32.50519031 23.58974359 43.59444444 40.18823529 48.4 58.44]
 
 # Plotting graph as saving it as plot.png.
 plt.figure(figsize=(12,4))
 plt.plot(y['dateOfBooking'], y['count'], label='y_true')
-plt.plot(y['dateOfBooking'], y_pred_velo, label='VeloCastor')
-plt.plot(y['dateOfBooking'], y_pred_week, label='WeekVeloCastor')
+plt.plot(y['dateOfBooking'], y_pred_velo, label='VeloCaster')
+plt.plot(y['dateOfBooking'], y_pred_week, label='WeekVeloCaster')
 plt.legend()
 plt.savefig("plot.png")
 
@@ -56,5 +59,7 @@ print("\n-----------------------------------------------------------------------
 prob_df1 = prob_df[(prob_df['pay_date'] >= pd.to_datetime('2024-01-01', format = '%Y-%m-%d'))]
 
 print("cv error on 20 subsets: ")
-print("Mean Absolute error of Velocastor: ", cross_val_error(VeloCastor, prob_df1['pay_date'], prob_df1['dateOfBooking'], cv=20))
-print("Mean Absolute error of WeekVelocastor: ", cross_val_error(WeekVeloCastor, prob_df1['pay_date'], prob_df1['dateOfBooking'], cv=20))
+print("Mean Absolute error of VeloCaster: ", cross_val_error(VeloCaster, prob_df1['pay_date'], prob_df1['dateOfBooking'], cv=20))
+# Mean Absolute error of VeloCaster:  9.09483108086636
+print("Mean Absolute error of WeekVeloCaster: ", cross_val_error(WeekVeloCaster, prob_df1['pay_date'], prob_df1['dateOfBooking'], cv=20))
+# Mean Absolute error of WeekVeloCaster:  7.662365451301989
