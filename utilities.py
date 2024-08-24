@@ -3,6 +3,28 @@ import pandas as pd
 from datetime import timedelta
 from random import randint
 
+def load_dataset(path='data/raw_data_bookings.csv'):
+	df = pd.read_csv(path, encoding = 'unicode_escape', low_memory=False, lineterminator='\n')
+
+	# Filter records which are Cancelled or Failed.
+	df = df[(df['isBooked']==True) & (df['bookingStatus']=='Booked')]
+
+	# Regular expression for extracting date from date time format
+	regex = r'(\d{4}-\d{2}-\d{2})T\d{2}:\d{2}:\d{2}\.\d{3}Z'
+
+	# Replace the timestamp with the extracted date using regex.
+	df['pay_date'] = df['payment_acknowledgement_time'].replace(regex, r'\1', regex=True)
+
+	# Converting dtypes of dateOfBooking and pay_date columns to datetime type.
+	df = df[['dateOfBooking', 'pay_date']]
+	df['dateOfBooking'] = pd.to_datetime(df['dateOfBooking'], format='%d-%m-%Y')
+	df['pay_date'] = pd.to_datetime(df['pay_date'], format='%Y-%m-%d')
+
+	# Calculating cross validation error using mean_absolute_error metrics on 100 different subsets.
+	df = df[(df['pay_date'] >= pd.to_datetime('2024-01-01', format = '%Y-%m-%d'))]
+
+	return df
+
 def mean_absolute_error(y_true, y_pred):
 	output_errors = np.average(abs(y_true - y_pred), axis=0)
 	return output_errors
