@@ -8,22 +8,7 @@ from scipy.stats import norm
 import warnings
 warnings.filterwarnings("ignore")
 
-df = pd.read_csv('../raw_data_bookings.csv', encoding = 'unicode_escape', low_memory=False, lineterminator='\n')
-df = df[(df['isBooked']==True) & (df['bookingStatus']=='Booked')]
-
-# Regular expression for extracting date from date time format
-regex = r'(\d{4}-\d{2}-\d{2})T\d{2}:\d{2}:\d{2}\.\d{3}Z'
-
-# Replace the timestamp with the extracted date using regex.
-df['pay_date'] = df['payment_acknowledgement_time'].replace(regex, r'\1', regex=True)
-
-# Converting dtypes of dateOfBooking and pay_date columns to datetime type.
-prob_df = df[['dateOfBooking', 'pay_date']]
-prob_df['dateOfBooking'] = pd.to_datetime(prob_df['dateOfBooking'], format='%d-%m-%Y')
-prob_df['pay_date'] = pd.to_datetime(prob_df['pay_date'], format='%Y-%m-%d')
-
-# Calculating cross validation error using mean_absolute_error metrics on 100 different subsets.
-prob_df1 = prob_df[(prob_df['pay_date'] >= pd.to_datetime('2024-01-01', format = '%Y-%m-%d'))]
+prob_df1 = load_dataset('../raw_data_bookings.csv')
 
 # print("cv error on 100 subsets: ")
 print("Mean Absolute error of VeloCaster: ", cross_val_error(VeloCaster, prob_df1['pay_date'], prob_df1['dateOfBooking'], numDays=14, cv=50))

@@ -1,4 +1,5 @@
 from models import *
+from utilities import load_dataset
 import pandas as pd
 from datetime import date, timedelta
 import matplotlib.pyplot as plt
@@ -6,19 +7,7 @@ import matplotlib.pyplot as plt
 import warnings
 warnings.filterwarnings("ignore")
 
-df = pd.read_csv('../raw_data_bookings.csv', encoding = 'unicode_escape', low_memory=False, lineterminator='\n')
-df = df[(df['isBooked']==True) & (df['bookingStatus']=='Booked')]
-
-# Regular expression for extracting date from date time format
-regex = r'(\d{4}-\d{2}-\d{2})T\d{2}:\d{2}:\d{2}\.\d{3}Z'
-
-# Replace the timestamp with the extracted date using regex.
-df['pay_date'] = df['payment_acknowledgement_time'].replace(regex, r'\1', regex=True)
-
-# Converting dtypes of dateOfBooking and pay_date columns to datetime type.
-prob_df = df[['dateOfBooking', 'pay_date']]
-prob_df['dateOfBooking'] = pd.to_datetime(prob_df['dateOfBooking'], format='%d-%m-%Y')
-prob_df['pay_date'] = pd.to_datetime(prob_df['pay_date'], format='%Y-%m-%d')
+prob_df = load_dataset('../raw_data_bookings.csv')
 
 today = date.fromisoformat('2024-07-14')
 
