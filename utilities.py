@@ -11,21 +11,27 @@ def get_cv_errors(estimator, payDates, bookDates, numDays=None, cv=5):
 	df = pd.DataFrame(columns = ['payDates', 'bookDates'])
 	df['payDates'] = payDates
 	df['bookDates'] = bookDates
-	minDate = df['payDates'].min().date() + timedelta(days=63)
-	maxDate = df['payDates'].max().date() - timedelta(days=8)
+	minDate = df['payDates'].min().date() + timedelta(days=64)
+	maxDate = df['payDates'].max().date() - timedelta(days=61)
 	errors = np.zeros(cv)
 
 	for i in range(cv):
-		randomDate = minDate + timedelta(days=randint(0, int((maxDate-minDate).days)))
+		# randomDate = minDate + timedelta(days=randint(0, int((maxDate-minDate).days)))
+		randomDate = maxDate + timedelta(days=i)
 		tempDf = df[df['payDates'] <= pd.to_datetime(randomDate)]
+		# print("actual: ", randomDate)
 		if numDays is None:
-			model = estimator(tempDf['payDates'], tempDf['bookDates'])
+			if i%7==0:
+				model = estimator(tempDf['payDates'], tempDf['bookDates'], useExistingModel=False, updateDataset=True)
+			else:
+				model = estimator(tempDf['payDates'], tempDf['bookDates'])
 		else:
 			model = estimator(tempDf['payDates'], tempDf['bookDates'], numDays=numDays)
 		y_pred = model.forecast()
 		y_true = df[(df['bookDates'] > pd.to_datetime(randomDate)) & (df['bookDates'] < pd.to_datetime(randomDate+timedelta(days=8)))]
 		y_true = y_true['bookDates'].value_counts().reset_index().sort_values(by='bookDates')
 		y_true = y_true['count'].to_numpy()
+		# print(i, cv, randomDate, y_true)
 		errors[i] = mean_absolute_error(y_true, y_pred)
 
 	return errors

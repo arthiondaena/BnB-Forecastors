@@ -240,8 +240,8 @@ class HybridCaster():
 		self.today = self.df['payDates'].max().date()
 
 		# 14 days for short term forecasting and 28 days for long term forecasting.
-		self.forecaster_14 = forecaster(payDates, bookDates, numDays=14)
-		self.forecaster_28 = forecaster(payDates, bookDates, numDays=28)
+		self.forecaster_14 = forecaster(self.df['payDates'], self.df['bookDates'], numDays=14)
+		self.forecaster_28 = forecaster(self.df['payDates'], self.df['bookDates'], numDays=28)
 		self.forecaster_14.train()
 		self.forecaster_28.train()
 
