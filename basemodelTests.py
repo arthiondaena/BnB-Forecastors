@@ -8,7 +8,10 @@ import xgboost as xgb
 
 df = pd.read_csv("data/train.csv")
 # X = df[['7_days', '14_days', '21_days', '28_days']].to_numpy()
-X = df[['14_days', '28_days']].to_numpy()
+X = df.drop(['target'], axis=1).to_numpy()
+# X = df[['14_days', '28_days']].to_numpy()
+print(df.columns)
+print(X.shape)
 y = df['target'].to_numpy()
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)

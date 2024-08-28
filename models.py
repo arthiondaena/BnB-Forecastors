@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from datetime import timedelta
 from sklearn.ensemble import RandomForestRegressor
-from utilities import create_csv
+from utilities import create_csv, update_csv
 import os.path
 import skops.io as sio
 
@@ -34,7 +34,7 @@ class VeloCaster():
 		self.df['gap'] = bookDates - payDates
 		self.numDays = numDays
 		# Automatically set today as max value in payDates.
-		self.today = self.df['payDates'].max().date()
+		self.today = self.df['payDates'].max()
 		self._cdf = None
 	
 	def train(self):
@@ -42,7 +42,7 @@ class VeloCaster():
 		startDate = self.today - timedelta(days=self.numDays)
 
 		# Filtering df to have bookDates in range (startDate, today].
-		tempDf = self.df[(self.df['bookDates'] > pd.to_datetime(startDate)) & (self.df['bookDates'] <= pd.to_datetime(self.today))]
+		tempDf = self.df[(self.df['bookDates'] > (startDate)) & (self.df['bookDates'] <= (self.today))]
 
 		# Group counting based on gap values.
 		trainDf = tempDf['gap'].value_counts().reset_index()
@@ -81,7 +81,7 @@ class VeloCaster():
 		futureBookings = np.zeros(7)
 		for i in range(7):
 			# Retrieving Number of bookings booked on i'th day after today.
-			futureBookings[i] = self.df[self.df['bookDates'] == pd.to_datetime(self.today + timedelta(days=i+1))].shape[0]
+			futureBookings[i] = self.df[self.df['bookDates'] == (self.today + timedelta(days=i+1))].shape[0]
 			
 			# Predicting i'th day booking by dividing current i'th day bookings by CDF of i'th day.
 			futureBookings[i] /= self._cdf[i+1]
@@ -120,7 +120,7 @@ class WeekVeloCaster():
 		self.df['weekday'] = self.df['bookDates'].dt.dayofweek
 		self.numDays = numDays
 		# Automatically set today as max value in payDates.
-		self.today = self.df['payDates'].max().date()
+		self.today = self.df['payDates'].max()
 		self._weekCdf = None
 	
 	def train(self):
@@ -128,7 +128,7 @@ class WeekVeloCaster():
 		startDate = self.today - timedelta(days=self.numDays)
 
 		# Filtering df to have bookDates in range (startDate, today].
-		tempDf = self.df[(self.df['bookDates'] > pd.to_datetime(startDate)) & (self.df['bookDates'] <= pd.to_datetime(self.today))]
+		tempDf = self.df[(self.df['bookDates'] > startDate) & (self.df['bookDates'] <= self.today)]
 
 		# Creating seperate dataframe for each weekday.
 		weekDf = [None] * 7
@@ -188,7 +188,7 @@ class WeekVeloCaster():
 		futureBookings = np.zeros(7)
 		for i in range(7):
 			# Retrieving Number of bookings booked on i'th day after today.
-			futureBookings[i] = self.df[self.df['bookDates'] == pd.to_datetime(self.today + timedelta(days=i+1))].shape[0]
+			futureBookings[i] = self.df[self.df['bookDates'] == (self.today + timedelta(days=i+1))].shape[0]
 			
 			# Predicting i'th day booking by dividing current i'th day bookings by CDF of i'th day.
 			futureBookings[i] /= self._weekCdf[(self.today.weekday()+i+1)%7][i+1]
@@ -218,7 +218,7 @@ class HybridCaster():
 		Forecaster used for short and long term outputs.
 	baseModel : {sklearn regression model}, default = RandomForestRegressor()
 		baseModel used for processing short and long term outputs and forecast more accurate output.
-	useExistingModel : {bool}, defualt = True
+	updateModel : {bool}, defualt = False
 		whether to use existing model saved in models/model.skops or train a new model.
 	dataset: {pandas.DataFrame}, default = None
 		dataset on which the baseModel is trained upon, if None data/train.csv is used.
@@ -231,7 +231,7 @@ class HybridCaster():
 	>>> model = HybridCaster(df['payDates'], df['bookDates'])
 	>>> y_pred = model.forecast()
 	"""
-	def __init__(self, payDates, bookDates, forecaster=VeloCaster, baseModel=RandomForestRegressor(), useExistingModel=True, dataset=None, updateDataset=False):		
+	def __init__(self, payDates, bookDates, forecaster=VeloCaster, baseModel=RandomForestRegressor(), updateModel=False, dataset=None, updateDataset=False, freshDataset=False):		
 		self.df = pd.DataFrame(columns = ['payDates', 'bookDates'])
 		self.df['payDates'] = payDates
 		self.df['bookDates'] = bookDates
@@ -239,27 +239,36 @@ class HybridCaster():
 		# Automatically set today as max value in payDates.
 		self.today = self.df['payDates'].max().date()
 
+		self.days = [7, 14, 21, 28]
+
 		# 14 days for short term forecasting and 28 days for long term forecasting.
-		self.forecaster_14 = forecaster(self.df['payDates'], self.df['bookDates'], numDays=14)
-		self.forecaster_28 = forecaster(self.df['payDates'], self.df['bookDates'], numDays=28)
-		self.forecaster_14.train()
-		self.forecaster_28.train()
+		self.forecasters = [None] * len(self.days)
+		for i in range(len(self.days)):
+			self.forecasters[i] = forecaster(self.df['payDates'], self.df['bookDates'], numDays=self.days[i])
+			self.forecasters[i].train()
+
+		if os.path.isfile('data/train.csv') and self.today.weekday()==0:
+			updateModel = True
+			updateDataset = True
 
 		# if updateDataset or there is no train.csv in data/ folder, create/update the data/train.csv
-		if updateDataset or not os.path.isfile('data/train.csv'):
+		if updateDataset and os.path.isfile('data/train.csv'):
+			update_csv(payDates, bookDates, Forecaster=VeloCaster)
+		if freshDataset or not os.path.isfile('data/train.csv'):
 			create_csv(payDates, bookDates, Forecaster=VeloCaster)
+
 		# if dataset is None, use data/train.csv
 		if dataset is None:
 			dataset = pd.read_csv('data/train.csv')
 		
 		# if useExistingModel and there is a model persistance available in models/ folder, load that model.
-		if useExistingModel and os.path.isfile('models/model.skops'):
+		if not updateModel and os.path.isfile('models/model.skops'):
 			unknown_types = sio.get_untrusted_types(file = "models/model.skops")
 			self.baseModel = sio.load("models/model.skops", trusted=unknown_types)
 		# else use the baseModel provided in the argument and train using dataset.
 		else:
 			self.baseModel = baseModel
-			X = dataset[['14_days', '28_days']].to_numpy()
+			X = dataset.drop(['target'], axis=1).to_numpy()
 			y = dataset['target'].to_numpy()
 			self.baseModel.fit(X, y)
 			obj = sio.dump(self.baseModel, "models/model.skops")
@@ -269,13 +278,19 @@ class HybridCaster():
 		pass
 
 	def forecast(self):
-		# Getting short term and long term outputs.
-		y_pred_14 = self.forecaster_14.forecast()
-		y_pred_28 = self.forecaster_28.forecast()
+		# Getting forecasters' outputs.
+		X = np.empty((6, 7))
+		for i in range(len(self.days)):
+			X[i] = self.forecasters[i].forecast()
+		
+		# n_th days array
+		X[len(self.days)] = np.array([n for n in range(1, 8)])
+		# weekday array
+		X[len(self.days)+1] = np.array([int(self.today.weekday()+n+1)%7 for n in range(1, 8)])
 		
 		# Arranging output and getting predictions using baseModel.
-		X = np.array([[y_pred_14[i], y_pred_28[i]] for i in range(len(y_pred_14))])
-		final_y_pred = self.baseModel.predict(X)
+		# X = np.array([[y_pred_14[i], y_pred_28[i]] for i in range(len(y_pred_14))])
+		final_y_pred = self.baseModel.predict(X.T)
 
 		# limiting the booking to integer and maximum slots.
 		for i in range(len(final_y_pred)):
