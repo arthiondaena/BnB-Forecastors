@@ -1,5 +1,5 @@
-from models import VeloCaster
-from utilities import load_dataset
+from models.models import VeloCaster
+from utilities.utilities import load_dataset
 
 import warnings
 warnings.filterwarnings("ignore")

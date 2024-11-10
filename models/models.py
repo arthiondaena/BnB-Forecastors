@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from datetime import timedelta
 from sklearn.ensemble import RandomForestRegressor
-from utilities import create_csv, update_csv
+from utilities.utilities import create_csv, update_csv
 import os.path
 import skops.io as sio
 
@@ -22,7 +22,7 @@ class VeloCaster():
 	
 	Examples
 	----------
-	>>> from models import VeloCaster
+	>>> from models.models import VeloCaster
 	>>> model = VeloCaster(df['payDates'], df['bookDates'])
 	>>> model.train()
 	>>> y_pred = model.forecast()
@@ -107,7 +107,7 @@ class WeekVeloCaster():
 	
 	Examples
 	----------
-	>>> from models import WeekVeloCaster
+	>>> from models.models import WeekVeloCaster
 	>>> model = WeekVeloCaster(df['payDates'], df['bookDates'])
 	>>> model.train()
 	>>> y_pred = model.forecast()
@@ -227,7 +227,7 @@ class HybridCaster():
 	
 	Examples
 	----------
-	>>> from models import HybridCaster
+	>>> from models.models import HybridCaster
 	>>> model = HybridCaster(df['payDates'], df['bookDates'])
 	>>> y_pred = model.forecast()
 	"""
@@ -247,31 +247,31 @@ class HybridCaster():
 			self.forecasters[i] = forecaster(self.df['payDates'], self.df['bookDates'], numDays=self.days[i])
 			self.forecasters[i].train()
 
-		if os.path.isfile('data/train.csv') and self.today.weekday()==0:
+		if os.path.isfile('../data/train.csv') and self.today.weekday()==0:
 			updateModel = True
 			updateDataset = True
 
 		# if updateDataset or there is no train.csv in data/ folder, create/update the data/train.csv
-		if updateDataset and os.path.isfile('data/train.csv'):
+		if updateDataset and os.path.isfile('../data/train.csv'):
 			update_csv(payDates, bookDates, Forecaster=VeloCaster)
-		if freshDataset or not os.path.isfile('data/train.csv'):
+		if freshDataset or not os.path.isfile('../data/train.csv'):
 			create_csv(payDates, bookDates, Forecaster=VeloCaster)
 
 		# if dataset is None, use data/train.csv
 		if dataset is None:
-			dataset = pd.read_csv('data/train.csv')
+			dataset = pd.read_csv('../data/train.csv')
 		
 		# if useExistingModel and there is a model persistance available in models/ folder, load that model.
-		if not updateModel and os.path.isfile('models/model.skops'):
-			unknown_types = sio.get_untrusted_types(file = "models/model.skops")
-			self.baseModel = sio.load("models/model.skops", trusted=unknown_types)
+		if not updateModel and os.path.isfile('model.skops'):
+			unknown_types = sio.get_untrusted_types(file ="model.skops")
+			self.baseModel = sio.load("model.skops", trusted=unknown_types)
 		# else use the baseModel provided in the argument and train using dataset.
 		else:
 			self.baseModel = baseModel
 			X = dataset.drop(['target'], axis=1).to_numpy()
 			y = dataset['target'].to_numpy()
 			self.baseModel.fit(X, y)
-			obj = sio.dump(self.baseModel, "models/model.skops")
+			obj = sio.dump(self.baseModel, "model.skops")
 	
 	# Not needed.
 	def train(self):

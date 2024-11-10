@@ -1,5 +1,5 @@
-from models import WeekVeloCaster
-from utilities import load_dataset
+from models.models import WeekVeloCaster
+from utilities.utilities import load_dataset
 
 import warnings
 warnings.filterwarnings("ignore")

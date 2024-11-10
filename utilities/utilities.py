@@ -111,7 +111,6 @@ def create_csv(payDates, bookDates, Forecaster, days:list = [], filename='data/t
 	if saveFile:
 		result.to_csv(filename, index=False)
 
-
 	result.reset_index(drop=True, inplace=True)
 	return result
 
