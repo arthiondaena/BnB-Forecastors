@@ -134,6 +134,7 @@ def nth_day_errors_competitors(estimator, df, brand='temp', numDays=None, cv=5):
 	date = df['date'].max().date() - timedelta(days=cv+15)
 	errors = np.empty((cv, 6))
 	unique_dates = df['date'].unique()
+	count = 0
 
 	for i in range(cv):
 		currentDate = date + timedelta(days=i)
@@ -152,13 +153,65 @@ def nth_day_errors_competitors(estimator, df, brand='temp', numDays=None, cv=5):
 		booked_slots = booked_slots[['day'+str(x) for x in range(1, 7)]].to_numpy()
 		errors[i] = abs(y_true - y_pred)
 
-		# if errors[i].sum() > 200:
-		# 	print(currentDate)
-		# 	print("y_true",  y_true)
-		# 	print("y_pred", y_pred)
-		# 	print("errors: ", errors[i])
-		# 	print("booked slots", booked_slots)
-		# 	print("------------------------------------\n")
+		if errors[i].max() > 20:
+			count += 1
+			print(currentDate)
+			print("y_true",  y_true)
+			print("y_pred", y_pred)
+			print("errors: ", errors[i])
+			print("booked", booked_slots)
+			print("------------------------------------\n")
 		# print(errors[i])
 	errors = errors[~np.all(errors == 0, axis=1)]
+	print("total size: ", errors.shape[0])
+	print("> 20 error size: ", count)
 	return errors.T
+
+def data_point_error_report(estimator, df, brand='temp', numDays=None, cv=5):
+	date = df['date'].max().date() - timedelta(days=cv + 15)
+	# errors = np.empty((cv, 6))
+	unique_dates = df['date'].unique()
+
+	columns = ['Date_of_prediction']
+	main_cols = ['Actual+1', 'Forecasted+1', 'Slots_Booked+1']
+	days = ['day+2', 'day+3', 'day+4', 'day+5', 'day+6']
+
+	for cols in main_cols:
+		columns.append(cols)
+		columns.extend(days)
+	columns.append('Error')
+	result = pd.DataFrame(columns=columns)
+
+	for i in range(cv):
+		currentDate = date + timedelta(days=i)
+		if not check_dates_exist(unique_dates, currentDate, 7):
+			continue
+
+		tempDf = df[df['date'] <= pd.to_datetime(currentDate)]
+		if numDays is None:
+			model = estimator(tempDf, brand)
+		else:
+			model = estimator(tempDf, numDays=numDays)
+		y_pred = model.forecast()
+		y_true = df[
+			(df['date'] > pd.to_datetime(currentDate)) & (df['date'] < pd.to_datetime(currentDate + timedelta(days=7)))]
+		y_true = y_true['day0'].to_numpy()
+		booked_slots = df[(df['date'] == pd.to_datetime(currentDate))]
+		booked_slots = booked_slots[['day' + str(x) for x in range(1, 7)]].to_numpy()
+
+		error = mean_absolute_error(y_true, y_pred)
+
+		y_pred = y_pred.tolist()
+		y_true= y_true.tolist()
+		booked_slots = booked_slots.flatten().tolist()
+
+		row = [str(currentDate)]
+		row.extend(y_pred)
+		row.extend(y_true)
+		row.extend(booked_slots)
+		row.append(error)
+		# print(row)
+
+		result.loc[len(result)] = row
+
+	result.to_csv('data/data_point_error_report.csv', index=False)

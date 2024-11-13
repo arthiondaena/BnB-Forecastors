@@ -1,7 +1,5 @@
 from utilities.utilities import *
 from models.models import *
-from utilities.competitor_util import *
-from models.competitors_models import *
 import pandas as pd
 import matplotlib.pyplot as plt
 import statistics
@@ -13,9 +11,9 @@ warnings.filterwarnings("ignore")
 prob_df1 = load_dataset('../raw_data_bookings.csv')
 
 # print("cv error on 100 subsets: ")
-print("Mean Absolute error of VeloCaster_14: ", cross_val_error(VeloCaster, prob_df1['pay_date'], prob_df1['dateOfBooking'], numDays=14, cv=50))
+# print("Mean Absolute error of VeloCaster_14: ", cross_val_error(VeloCaster, prob_df1['pay_date'], prob_df1['dateOfBooking'], numDays=14, cv=50))
 # # Mean Absolute error of VeloCaster:  6.138571428571429
-print("Mean Absolute error of VeloCaster_28: ", cross_val_error(VeloCaster, prob_df1['pay_date'], prob_df1['dateOfBooking'], numDays=28, cv=50))
+# print("Mean Absolute error of VeloCaster_28: ", cross_val_error(VeloCaster, prob_df1['pay_date'], prob_df1['dateOfBooking'], numDays=28, cv=50))
 # Mean Absolute error of WeekVeloCaster:  6.24142857142857
 # print("Mean Absolute error of HybridCaster: ", cross_val_error(HybridCaster, prob_df1['pay_date'], prob_df1['dateOfBooking'], cv=50))
 # Mean Absolute error of HybridCaster:  3.717142857142857
@@ -54,18 +52,3 @@ print("Mean Absolute error of VeloCaster_28: ", cross_val_error(VeloCaster, prob
 # plt.savefig('graphs/errors_nth_day.png')
 # plt.clf()
 
-from build import get_all_brands
-brands = get_all_brands('../competitors_data.xlsx')
-df = load_competitors_df('../competitors_data.xlsx', brand=brands)
-plt.figure(figsize=(12, 4))
-
-nth_day = nth_day_errors_competitors(C_HybridCaster, df, brand='all', cv = 50)
-for i in range(nth_day.shape[0]):
-	nth_day[i].sort()
-	nth_mean = statistics.mean(nth_day[i])
-	nth_sd = statistics.stdev(nth_day[i])
-	plt.plot(nth_day[i], norm.pdf(nth_day[i], nth_mean, nth_sd), label = f'day n+{i+1}')
-plt.legend()
-plt.show()
-plt.savefig('graphs/errors_nth_day_competitors.png')
-plt.clf()
