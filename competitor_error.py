@@ -22,4 +22,5 @@ df = load_competitors_df('../competitors_data.xlsx', brand='BingeNBash')
 # plt.savefig('graphs/errors_nth_day_competitors.png')
 # plt.clf()
 
-data_point_error_report(C_HybridCaster, df, brand='BingeNBash', cv = 75)
+# data_point_error_report(C_HybridCaster, df, brand='BingeNBash', cv = 75)
+all_brands_data_point_error(C_HybridCaster, brands=['BingeNBash', 'BingeTown'], path='../competitors_data.xlsx',cv=75)

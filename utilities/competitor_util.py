@@ -167,7 +167,7 @@ def nth_day_errors_competitors(estimator, df, brand='temp', numDays=None, cv=5):
 	print("> 20 error size: ", count)
 	return errors.T
 
-def data_point_error_report(estimator, df, brand='temp', numDays=None, cv=5):
+def data_point_error_report(estimator, df, brand='temp', numDays=None, cv=5, saveFile=True):
 	date = df['date'].max().date() - timedelta(days=cv + 15)
 	# errors = np.empty((cv, 6))
 	unique_dates = df['date'].unique()
@@ -214,4 +214,38 @@ def data_point_error_report(estimator, df, brand='temp', numDays=None, cv=5):
 
 		result.loc[len(result)] = row
 
-	result.to_csv('data/data_point_error_report.csv', index=False)
+	if saveFile:
+		result.to_csv('data/data_point_error_report.csv', index=False)
+
+	return result.reset_index(drop=True)
+
+def get_all_brands(path=r'data/competitors_data.xlsx'):
+	brands = pd.read_excel(path, usecols='C')
+	brands.columns = ['brand']
+	brands = brands['brand'].unique()
+	return brands
+
+def all_brands_data_point_error(estimator, brands, path='data/competitors_data.xlsx', cv=5):
+	main_brands = brands
+	all_brands = get_all_brands(path)
+	other_brands = list(filter(lambda x: x not in main_brands, all_brands))
+	result = pd.DataFrame()
+
+	for brand in main_brands:
+		df = load_competitors_df(path, brand)
+		report = data_point_error_report(estimator, df, brand, cv=cv, saveFile=False)
+		report['brand'] = brand
+		result = pd.concat([result, report])
+
+	# Others
+	df = load_competitors_df(path, other_brands)
+	report = data_point_error_report(estimator, df, 'others', cv=cv)
+	report['brand'] = 'others'
+	result = pd.concat([result, report])
+
+	result = result[['Date_of_prediction', 'brand'] +
+					[col for col in result.columns if col != 'brand' and col != 'Date_of_prediction']]
+
+	result.sort_values(by=['Date_of_prediction'], inplace=True)
+
+	result.to_csv('data/all_brands_data_point_error.csv')
