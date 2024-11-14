@@ -173,12 +173,11 @@ def data_point_error_report(estimator, df, brand='temp', numDays=None, cv=5, sav
 	unique_dates = df['date'].unique()
 
 	columns = ['Date_of_prediction']
-	main_cols = ['Actual+1', 'Forecasted+1', 'Slots_Booked+1']
-	days = ['day+2', 'day+3', 'day+4', 'day+5', 'day+6']
+	main_cols = ['Actual', 'Forecasted', 'Slots_Booked']
+	days = ['+1', '+2', '+3', '+4', '+5', '+6']
 
 	for cols in main_cols:
-		columns.append(cols)
-		columns.extend(days)
+		columns.extend([cols+day for day in days])
 	columns.append('Error')
 	result = pd.DataFrame(columns=columns)
 
@@ -248,4 +247,4 @@ def all_brands_data_point_error(estimator, brands, path='data/competitors_data.x
 
 	result.sort_values(by=['Date_of_prediction'], inplace=True)
 
-	result.to_csv('data/all_brands_data_point_error.csv')
+	result.to_csv('data/all_brands_data_point_error.csv', index=False)
