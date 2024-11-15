@@ -153,18 +153,18 @@ def nth_day_errors_competitors(estimator, df, brand='temp', numDays=None, cv=5):
 		booked_slots = booked_slots[['day'+str(x) for x in range(1, 7)]].to_numpy()
 		errors[i] = abs(y_true - y_pred)
 
-		if errors[i].max() > 20:
-			count += 1
-			print(currentDate)
-			print("y_true",  y_true)
-			print("y_pred", y_pred)
-			print("errors: ", errors[i])
-			print("booked", booked_slots)
-			print("------------------------------------\n")
+		# if errors[i].max() > 20:
+		# 	count += 1
+		# 	print(currentDate)
+		# 	print("y_true",  y_true)
+		# 	print("y_pred", y_pred)
+		# 	print("errors: ", errors[i])
+		# 	print("booked", booked_slots)
+		# 	print("------------------------------------\n")
 		# print(errors[i])
 	errors = errors[~np.all(errors == 0, axis=1)]
-	print("total size: ", errors.shape[0])
-	print("> 20 error size: ", count)
+	# print("total size: ", errors.shape[0])
+	# print("> 20 error size: ", count)
 	return errors.T
 
 def data_point_error_report(estimator, df, brand='temp', numDays=None, cv=5, saveFile=True):
