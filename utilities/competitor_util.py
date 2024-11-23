@@ -2,6 +2,9 @@ import numpy as np
 import pandas as pd
 from datetime import timedelta
 
+from pandas.core.interchange.dataframe_protocol import DataFrame
+
+
 def load_competitors_df(path='data/competitors_data.xlsv', brand=None):
 	if type(brand) is str:
 		brand = [brand]
@@ -224,7 +227,7 @@ def get_all_brands(path=r'data/competitors_data.xlsx'):
 	brands = brands['brand'].unique()
 	return brands
 
-def all_brands_data_point_error(estimator, brands, path='data/competitors_data.xlsx', cv=5):
+def all_brands_data_point_error(estimator, brands, path='data/competitors_data.xlsx', cv=5, saveFile=True):
 	main_brands = brands
 	all_brands = get_all_brands(path)
 	other_brands = list(filter(lambda x: x not in main_brands, all_brands))
@@ -247,4 +250,31 @@ def all_brands_data_point_error(estimator, brands, path='data/competitors_data.x
 
 	result.sort_values(by=['Date_of_prediction'], inplace=True)
 
-	result.to_csv('data/all_brands_data_point_error.csv', index=False)
+	if saveFile:
+		result.to_csv('data/all_brands_data_point_error.csv', index=False)
+
+	return result.reset_index(drop=True)
+
+def relative_error_competitors(estimator, brands, path='data/competitors_data.xlsx', cv=5):
+	result = all_brands_data_point_error(estimator, brands=brands, path=path, cv=cv, saveFile=False)
+	main_brand = brands[0]
+	brands = brands[1:]
+	brands.append('others')
+	df = pd.DataFrame()
+	main_cols = ['Actual', 'Forecasted']
+	all_cols = [x+'+'+str(i) for i in range(1, 7) for x in main_cols]
+
+	for brand in brands:
+		temp_df = result[(result['brand']==brand) | (result['brand']==main_brand)]
+		subtract = lambda x: x.iloc[0] - (x.iloc[1] if len(x) == 2 else 0)
+		grp = temp_df.groupby(['Date_of_prediction'])[all_cols].agg(np.subtract.reduce).reset_index()
+		# grp = temp_df.groupby(['Date_of_prediction'])[all_cols]
+		grp['brand'] = brand
+		# print(grp)
+		df = pd.concat([df, grp])
+		# exit(0)
+	all_cols = ['Date_of_prediction', 'brand'] + all_cols
+	df.sort_values(['Date_of_prediction','brand'], inplace=True)
+	df = df[all_cols]
+
+	df.to_csv(f'data/{main_brand}_relative_error.csv')
